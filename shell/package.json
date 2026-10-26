@@ -1,0 +1,57 @@
+{
+  "name": "tsumu-chat-desktop",
+  "productName": "Tsumu",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tsumu - voice companion chat app; frameless Electron desktop shell",
+  "main": "main.js",
+  "author": "CloudsHeaven",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.tsumu.chat",
+    "productName": "Tsumu",
+    "icon": "build/icon.png",
+    "directories": {
+      "output": "../../Tsumu"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "web-storage.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../web",
+        "to": "web"
+      }
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-${version}-setup.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "appId": "com.tsumu.tools",
+  "productName": "Tsumu-Tools",
+  "asar": false,
+  "npmRebuild": false,
+  "nodeGypRebuild": false,
+  "electronVersion": "44.4.5",
+  "extraMetadata": {
+    "name": "tsumu-tools",
+    "productName": "Tsumu-Tools",
+    "main": "electron/main.js"
+  },
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "electron/**/*",
+    "src/**/*",
+    "test/**/*",
+    "models/**/*",
+    "package.json",
+    "separate.js",
+    "!**/*.log",
+    "!**/*.map"
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "dir",
+        "arch": [
+          "x64"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+# 依赖与构建产物
+# ★ 2026-10-26：这几条必须**锚定根目录**（写成 /dist/ 而不是 dist/）
+#   否则会误伤 web/vendor/cubism/dist/ —— 那是 Live2D 的 Framework 构建产物，
+#   被 l2d-model.js `import "../vendor/cubism/dist/cubism-framework.js"` 直接引用；
+#   一旦被忽略，推上去的仓库**立绘直接坏掉**（2026-10-26 实测：工作区 174 文件、提交只有 170）
+node_modules/
+/dist/
+/out/
+*.log
+Thumbs.db
+.DS_Store
+
+# 需要自备的素材（不在本仓库内）
+web/assets/
+web/audio/pomo/lofi/
+web/audio/pomo/ambient/
+shell/build/icon.png
+shell/build/icon.ico
+
+# 编辑器与本机配置（同样只忽略根目录）
+/.vscode/
+/.idea/

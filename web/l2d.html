@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tsumu · Live2D 查看器</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #0d0b12;
+    color: #ece7f2;
+    font: 13px/1.6 "Microsoft YaHei", system-ui, sans-serif;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  #bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.05);
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    -webkit-app-region: drag;
+  }
+  #bar > * { -webkit-app-region: no-drag; }
+  #title { font-weight: 600; letter-spacing: .04em; }
+  #status { margin-left: auto; font-size: 12px; color: #8fd6a0; }
+  #hud { font-size: 12px; color: #9b93ab; min-width: 120px; }
+  #btn-reset {
+    border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06);
+    color: inherit; border-radius: 8px; padding: 3px 12px; cursor: pointer;
+  }
+  #btn-reset:hover { background: rgba(255,255,255,.12); }
+  #hint { font-size: 12px; color: #8a8299; }
+  #hint b { color: #b9a7e8; }
+
+  /* 画布区 */
+  #stage { flex: 1; position: relative; overflow: hidden; }
+  /* ★ 2026-09-27：去掉立绘画布的 grab/grabbing，恢复默认箭头（与 min.css 同步）。 */
+  #l2d { width: 100%; height: 100%; display: block; touch-action: none; }
+
+  /* 控制区：动作 / 表情按钮 */
+  #controls {
+    border-top: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.03);
+    padding: 8px 12px; max-height: 34vh; overflow-y: auto;
+  }
+  #controls .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0; }
+  #controls .row b { font-size: 12px; color: #a99fc0; margin-right: 4px; flex: 0 0 auto; }
+  #controls button {
+    border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06);
+    color: #d8d2e4; border-radius: 999px; padding: 3px 10px;
+    font-size: 12px; cursor: pointer; white-space: nowrap;
+  }
+  #controls button:hover { background: rgba(150,130,255,.22); border-color: rgba(150,130,255,.5); }
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <span id="title">Tsumu · Live2D</span>
+  <span id="hud">滚轮缩放 · 拖动平移</span>
+  <span id="status">初始化…</span>
+  <button type="button" id="btn-reset">重置视角</button>
+</div>
+
+<div id="stage">
+  <canvas id="l2d"></canvas>
+</div>
+
+<div id="controls">
+  <div class="row"><b>提示</b><span id="hint">模型加载后会列出<b>动作组</b>与<b>表情</b>，点一下即可切换；鼠标移动会跟随。</span></div>
+</div>
+
+<script src="../vendor/cubism/Core/live2dcubismcore.min.js"></script>
+
+<script type="module" src="js/l2d-viewer.js"></script>
+</body>
+</html>

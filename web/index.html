@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tsumu</title>
+
+<link rel="stylesheet" href="css/min.css?v=20261016a">
+</head>
+<body>
+
+<div id="stage">
+  <canvas id="l2d"></canvas>
+  
+  <div id="l2d-loading" class="hide">
+    <span class="spin" aria-hidden="true"></span>
+    <span data-i18n="ui.loading">织音摸鱼中...</span>
+  </div>
+  
+  <div id="l2d-hint" class="hide"></div>
+  
+  <div id="l2d-nomodel" class="hide">
+    <p data-i18n="l2d.noCap">没有读到模型信息
+（未安装模型）</p>
+    <button id="btn-l2d-settings" class="mini-btn" data-i18n="l2d.model">立绘模型</button>
+  </div>
+</div>
+
+<div id="ui">
+  <header id="bar">
+    <span id="title">Tsumu</span>
+    <button type="button" id="btn-asmr" data-i18n-title="ui.asmrTipOff">ASMR</button>
+    
+    <button type="button" id="btn-diary" data-i18n="ui.diary" data-i18n-title="ui.diaryTipOff">日记</button>
+    <span id="status" class="off" data-i18n="status.unconfigured">未配置</span>
+    
+  </header>
+
+  <div id="grow"></div>
+
+  
+
+  
+  
+  <section id="chat" class="collapsed">
+    <div id="chat-head">
+      
+      <span class="who" data-i18n="chara.her">织音</span>
+      
+      <button type="button" id="btn-chat-toggle" data-i18n-title="chat.toggleTip" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 11.6a8.4 8.4 0 0 1-9 8.4 9.6 9.6 0 0 1-2.6-.35L4.5 21l1.3-3.9A8.3 8.3 0 0 1 3 11.6C3 7 7 3.4 12 3.4s9 3.6 9 8.2z"></path>
+        </svg>
+        <span id="chat-badge" class="hidden"></span>
+      </button>
+    </div>
+    <main id="log"></main>
+    
+    <div id="img-preview" class="hidden">
+      <img id="img-preview-thumb" alt="">
+      <button type="button" id="btn-img-drop" data-i18n-title="chat.dropImage" title="取消这张图">&#10005;</button>
+    </div>
+    <footer id="composer">
+      
+      <button type="button" id="btn-dual" aria-pressed="false" data-i18n-title="tip.dual" title="旁白 / 对话（二分输入）">
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <rect x="2.6" y="5.85" width="14.8" height="3.5" rx="1.75"></rect>
+          <rect x="2.6" y="10.65" width="14.8" height="3.5" rx="1.75"></rect>
+        </svg>
+      </button>
+      <div class="input-fields">
+        
+        <textarea id="input-narr" class="hidden" rows="1" data-i18n-ph="chat.narrHint" data-i18n-title="chat.narrTip" placeholder="旁白（环境·动作）"></textarea>
+        
+        <textarea id="input" rows="1" data-i18n-ph="chat.inputHint" data-i18n-title="chat.inputTip" placeholder="说点什么…"></textarea>
+      </div>
+      
+      <input type="file" id="img-file" accept="image/*" class="hidden">
+      
+      <button type="button" id="btn-img" data-i18n-title="chat.addImage" title="发送图片">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+        </svg>
+      </button>
+      <button type="button" id="btn-send" data-i18n="chat.send">发送</button>
+    </footer>
+  </section>
+
+  
+  <div id="fn" class="collapsed">
+    <div id="fn-list">
+      
+      <button type="button" id="btn-settings" class="fn-btn" data-i18n-title="nav.settings" title="设置">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 1.5L12.27 1.56L12.54 1.73L12.79 1.98L13.02 2.29L13.24 2.61L13.44 2.92L13.63 3.2L13.82 3.44L14.01 3.64L14.19 3.81L14.38 3.96L14.57 4.08L14.76 4.2L14.95 4.32L15.14 4.42L15.35 4.48L15.56 4.53L15.78 4.58L16 4.63L16.24 4.66L16.49 4.67L16.77 4.66L17.07 4.62L17.41 4.56L17.77 4.48L18.15 4.41L18.53 4.36L18.88 4.36L19.19 4.42L19.42 4.58L19.58 4.81L19.64 5.12L19.64 5.47L19.59 5.85L19.52 6.23L19.44 6.59L19.38 6.93L19.34 7.23L19.33 7.51L19.34 7.76L19.37 8L19.42 8.22L19.47 8.44L19.52 8.65L19.58 8.86L19.68 9.05L19.8 9.24L19.92 9.43L20.04 9.62L20.19 9.81L20.36 9.99L20.56 10.18L20.8 10.37L21.08 10.56L21.39 10.76L21.71 10.98L22.02 11.21L22.27 11.46L22.44 11.73L22.5 12L22.44 12.27L22.27 12.54L22.02 12.79L21.71 13.02L21.39 13.24L21.08 13.44L20.8 13.63L20.56 13.82L20.36 14.01L20.19 14.19L20.04 14.38L19.92 14.57L19.8 14.76L19.68 14.95L19.58 15.14L19.52 15.35L19.47 15.56L19.42 15.78L19.37 16L19.34 16.24L19.33 16.49L19.34 16.77L19.38 17.07L19.44 17.41L19.52 17.77L19.59 18.15L19.64 18.53L19.64 18.88L19.58 19.19L19.42 19.42L19.19 19.58L18.88 19.64L18.53 19.64L18.15 19.59L17.77 19.52L17.41 19.44L17.07 19.38L16.77 19.34L16.49 19.33L16.24 19.34L16 19.37L15.78 19.42L15.56 19.47L15.35 19.52L15.14 19.58L14.95 19.68L14.76 19.8L14.57 19.92L14.38 20.04L14.19 20.19L14.01 20.36L13.82 20.56L13.63 20.8L13.44 21.08L13.24 21.39L13.02 21.71L12.79 22.02L12.54 22.27L12.27 22.44L12 22.5L11.73 22.44L11.46 22.27L11.21 22.02L10.98 21.71L10.76 21.39L10.56 21.08L10.37 20.8L10.18 20.56L9.99 20.36L9.81 20.19L9.62 20.04L9.43 19.92L9.24 19.8L9.05 19.68L8.86 19.58L8.65 19.52L8.44 19.47L8.22 19.42L8 19.37L7.76 19.34L7.51 19.33L7.23 19.34L6.93 19.38L6.59 19.44L6.23 19.52L5.85 19.59L5.47 19.64L5.12 19.64L4.81 19.58L4.58 19.42L4.42 19.19L4.36 18.88L4.36 18.53L4.41 18.15L4.48 17.77L4.56 17.41L4.62 17.07L4.66 16.77L4.67 16.49L4.66 16.24L4.63 16L4.58 15.78L4.53 15.56L4.48 15.35L4.42 15.14L4.32 14.95L4.2 14.76L4.08 14.57L3.96 14.38L3.81 14.19L3.64 14.01L3.44 13.82L3.2 13.63L2.92 13.44L2.61 13.24L2.29 13.02L1.98 12.79L1.73 12.54L1.56 12.27L1.5 12L1.56 11.73L1.73 11.46L1.98 11.21L2.29 10.98L2.61 10.76L2.92 10.56L3.2 10.37L3.44 10.18L3.64 9.99L3.81 9.81L3.96 9.62L4.08 9.43L4.2 9.24L4.32 9.05L4.42 8.86L4.48 8.65L4.53 8.44L4.58 8.22L4.63 8L4.66 7.76L4.67 7.51L4.66 7.23L4.62 6.93L4.56 6.59L4.48 6.23L4.41 5.85L4.36 5.47L4.36 5.12L4.42 4.81L4.58 4.58L4.81 4.42L5.12 4.36L5.47 4.36L5.85 4.41L6.23 4.48L6.59 4.56L6.93 4.62L7.23 4.66L7.51 4.67L7.76 4.66L8 4.63L8.22 4.58L8.44 4.53L8.65 4.48L8.86 4.42L9.05 4.32L9.24 4.2L9.43 4.08L9.62 3.96L9.81 3.81L9.99 3.64L10.18 3.44L10.37 3.2L10.56 2.92L10.76 2.61L10.98 2.29L11.21 1.98L11.46 1.73L11.73 1.56Z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </button>
+      <button type="button" id="btn-memory" class="fn-btn" data-i18n-title="memory.title" title="回忆">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 4.6h11.4A2.6 2.6 0 0 1 19 7.2v12.2H7.6A2.6 2.6 0 0 1 5 16.8z"></path>
+          <path d="M5 16.8a2.6 2.6 0 0 1 2.6-2.6H19"></path>
+        </svg>
+      </button>
+      <button type="button" id="btn-audio" class="fn-btn" data-i18n-title="audio.tip" title="音乐 / ASMR 播放器">
+        
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2.6" y="5" width="18.8" height="14" rx="2.6"></rect>
+          <circle cx="8.4" cy="11.4" r="2.1"></circle>
+          <circle cx="15.6" cy="11.4" r="2.1"></circle>
+          <path d="M6.6 16.4h10.8"></path>
+        </svg>
+      </button>
+      
+      <button type="button" id="btn-diary-card" class="fn-btn" data-i18n-title="diary.title" title="织音眼中的你">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12.00 4.68L12.51 4.22L13.07 3.91L13.64 3.74L14.22 3.73L14.76 3.86L15.26 4.13L15.68 4.53L16.01 5.05L16.23 5.67L16.32 6.37L16.27 7.14L16.05 7.95L15.64 8.81L14.95 9.73L15.31 9.79L16.36 9.48L17.28 9.40L18.10 9.47L18.83 9.68L19.44 10.01L19.94 10.42L20.30 10.91L20.53 11.44L20.60 12.00L20.53 12.56L20.30 13.09L19.94 13.58L19.44 13.99L18.83 14.32L18.10 14.53L17.28 14.60L16.36 14.52L15.31 14.21L14.95 14.27L15.64 15.19L16.05 16.05L16.27 16.86L16.32 17.63L16.23 18.33L16.01 18.95L15.68 19.47L15.26 19.87L14.76 20.14L14.22 20.27L13.64 20.26L13.07 20.09L12.51 19.78L12.00 19.32L11.56 18.72L11.21 17.99L10.98 17.11L10.91 16.07L10.90 15.25L10.22 16.29L9.54 16.99L8.84 17.48L8.12 17.80L7.42 17.97L6.76 17.98L6.15 17.85L5.62 17.60L5.18 17.23L4.87 16.77L4.68 16.23L4.63 15.64L4.72 15.01L4.97 14.39L5.37 13.78L5.93 13.21L6.66 12.70L7.57 12.29L9.00 12.00L7.57 11.71L6.66 11.30L5.93 10.79L5.37 10.22L4.97 9.61L4.72 8.99L4.63 8.36L4.68 7.77L4.87 7.23L5.18 6.77L5.62 6.40L6.15 6.15L6.76 6.02L7.42 6.03L8.12 6.20L8.84 6.52L9.54 7.01L10.22 7.71L10.90 8.75L10.91 7.93L10.98 6.89L11.21 6.01L11.56 5.28Z"></path>
+          <circle cx="12" cy="12" r="2"></circle>
+        </svg>
+      </button>
+      
+      <button type="button" id="btn-todo" class="fn-btn" data-i18n-title="todo.title" title="待办">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          
+          <circle cx="12" cy="12" r="8.4" stroke-opacity=".28"></circle>
+          <circle class="todo-ring" cx="12" cy="12" r="8.4"
+                  stroke-dasharray="52.78 52.78" transform="rotate(-90 12 12)"></circle>
+          <path d="M8.7 12.1L11.1 14.5L15.5 9.9"></path>
+        </svg>
+      </button>
+      
+      <button type="button" id="btn-pomo" class="fn-btn" data-i18n-title="pomo.title" title="番茄钟">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.4" stroke-opacity=".28"></circle>
+          <path d="M12 7.4V12"></path>
+          <path d="M12 12l3.2 2"></path>
+        </svg>
+      </button>
+    </div>
+    <button type="button" id="btn-fn-toggle" data-i18n-title="fn.toggleTip" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="4" y="4" width="6.4" height="6.4" rx="2"></rect>
+        <rect x="13.6" y="4" width="6.4" height="6.4" rx="2"></rect>
+        <rect x="4" y="13.6" width="6.4" height="6.4" rx="2"></rect>
+        <rect x="13.6" y="13.6" width="6.4" height="6.4" rx="2"></rect>
+      </svg>
+    </button>
+  </div>
+
+  
+  <div id="player-cover" class="hidden" role="button" tabindex="0">
+    <img id="player-cover-img" alt="" class="hidden">
+  </div>
+
+  <div id="player-lyric" class="hidden">
+    <div id="player-lyric-text" class="nolyric"></div>
+    <div id="player-warn" class="hidden"></div>
+    <div id="player-lyric-row">
+      
+      <span id="pl-left">
+        <button type="button" id="pl-lib" class="pl-lib" title="切换歌单（ASMR / 音乐）">
+          <span id="pl-lib-name">ASMR</span><span class="pl-lib-swap" aria-hidden="true">&#8644;</span>
+        </button>
+      </span>
+      <span id="pl-mid">
+      <button type="button" id="player-prev" class="pl-btn" data-i18n-title="audio.prev" title="上一首">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 6.5v11L8.5 12z"></path><path d="M6 6.5v11"></path>
+        </svg>
+      </button>
+      
+      <button type="button" id="player-toggle" class="pl-btn pl-main" data-i18n-title="audio.play" title="播放 / 暂停">
+        <svg class="ico-play" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8.5 5.5v13L19 12z"></path>
+        </svg>
+        <svg class="ico-pause" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9.5 5.5v13"></path><path d="M14.5 5.5v13"></path>
+        </svg>
+      </button>
+      <button type="button" id="player-next" class="pl-btn" data-i18n-title="audio.next" title="下一首">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 6.5v11L15.5 12z"></path><path d="M18 6.5v11"></path>
+        </svg>
+      </button>
+      </span>
+      <div id="player-seek" title="拖动调整进度"><div id="player-seek-fill"></div></div>
+      <span id="player-time">0:00 / 0:00</span>
+      <span id="pl-right">
+      
+      <button type="button" id="pl-view" class="pl-btn pl-close" title="切换视图（封面 / 列表）">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 6.5h1M8.5 6.5h11.5M4 12h1M8.5 12h11.5M4 17.5h1M8.5 17.5h11.5"></path>
+        </svg>
+      </button>
+      
+      <button type="button" id="player-close" class="pl-btn pl-close" data-i18n-title="audio.closePlayer" title="停止并收起">
+        
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4.80 6.00L4.83 5.67L4.90 5.35L5.03 5.05L5.20 4.77L5.42 4.52L5.67 4.30L5.95 4.13L6.25 4.00L6.57 3.93L6.90 3.90L13.10 3.90L13.43 3.93L13.75 4.00L14.05 4.13L14.33 4.30L14.58 4.52L14.80 4.77L14.97 5.05L15.10 5.35L15.17 5.67L15.20 6.00M4.80 6.00L4.80 12.20L4.83 12.53L4.90 12.85L5.03 13.15L5.20 13.43L5.42 13.68L5.67 13.90L5.95 14.07L6.25 14.20L6.57 14.27L6.90 14.30M10.10 8.70L16.30 8.70L16.63 8.73L16.95 8.80L17.25 8.93L17.53 9.10L17.78 9.32L18.00 9.57L18.17 9.85L18.30 10.15L18.37 10.47L18.40 10.80L18.40 17.00L18.37 17.33L18.30 17.65L18.17 17.95L18.00 18.23L17.78 18.48L17.53 18.70L17.25 18.87L16.95 19.00L16.63 19.07L16.30 19.10L10.10 19.10L9.77 19.07L9.45 19.00L9.15 18.87L8.87 18.70L8.62 18.48L8.40 18.23L8.23 17.95L8.10 17.65L8.03 17.33L8.00 17.00L8.00 10.80L8.03 10.47L8.10 10.15L8.23 9.85L8.40 9.57L8.62 9.32L8.87 9.10L9.15 8.93L9.45 8.80L9.77 8.73L10.10 8.70L10.10 8.70Z"></path>
+        </svg>
+      </button>
+      </span>
+    </div>
+  </div>
+
+  <div id="player-card" class="collapsed">
+    
+    <div class="pc-head"><span id="player-title" data-i18n="audio.title">音乐 / ASMR</span><span id="player-stat"></span></div>
+    
+    <div id="player-filter" class="pc-filter hidden">
+      <button type="button" id="player-filter-toggle" class="pc-ftoggle" aria-expanded="false">
+        <span id="player-filter-label" class="pc-flabel"></span>
+        <span class="pc-fchev" aria-hidden="true">&#9662;</span>
+      </button>
+      <div id="player-filter-panel" class="pc-fpanel hidden">
+        <input type="text" id="player-filter-search" class="pc-fsearch" autocomplete="off" spellcheck="false">
+        <div id="player-filter-list" class="pc-flist"></div>
+      </div>
+    </div>
+    <div id="player-list"></div>
+    <div id="player-note" class="hidden"></div>
+    
+    
+    <button type="button" id="player-pick" class="pc-pick">选择音乐文件夹</button>
+  </div>
+
+  
+  
+  <div id="player-flow" class="hidden collapsed" aria-hidden="true">
+    
+    <div id="player-flow-view">
+      
+      
+      <div id="player-flow-stage" role="listbox" tabindex="0"
+           aria-label="封面轮播：左右方向键或滚轮切换">
+        
+        <div id="player-flow-track" class="cf-track"></div>
+      </div>
+    </div>
+    
+    
+  </div>
+</div>
+
+<div id="player-lightbox" class="off">
+  <img id="player-lightbox-img" alt="">
+  <span id="player-lightbox-tip" data-i18n="audio.coverClose">点任意处关闭</span>
+</div>
+
+<button type="button" id="todo-ring" class="hidden" data-i18n-title="todo.title" title="待办" aria-label="待办">
+  <svg class="hud-svg" viewBox="0 0 44 44" fill="none" stroke-linecap="round" aria-hidden="true">
+    <circle cx="22" cy="22" r="20" stroke="rgba(255,255,255,.16)" stroke-width="2"></circle>
+    
+    <circle id="todo-hud-arc" cx="22" cy="22" r="20" stroke="#b9b1c9" stroke-width="2"
+            stroke-dasharray="0 125.66" transform="rotate(-90 22 22)"></circle>
+  </svg>
+  <span class="hud-label" data-i18n="todo.hud">to do</span>
+  <span class="hud-num" id="todo-hud-num">0/0</span>
+</button>
+
+<button type="button" id="pomo-ring" class="hidden" data-i18n-title="pomo.title" title="番茄钟" aria-label="番茄钟">
+  <svg class="hud-svg" viewBox="0 0 44 44" fill="none" stroke-linecap="round" aria-hidden="true">
+    <circle cx="22" cy="22" r="20" stroke="rgba(255,255,255,.16)" stroke-width="2"></circle>
+    
+    <circle id="pomo-hud-arc" cx="22" cy="22" r="20" stroke="#b9b1c9" stroke-width="2"
+            stroke-dasharray="0 125.66" transform="rotate(-90 22 22)"></circle>
+  </svg>
+  <span class="hud-label" id="pomo-hud-label" data-i18n="pomo.hud.focus">专注</span>
+  <span class="hud-num" id="pomo-hud-num">25:00</span>
+</button>
+
+<div id="bubble-layer" aria-live="polite"></div>
+
+<div id="settings" class="hidden">
+  <div class="panel" data-size="fixed">
+    
+    <div class="panel-head">
+      <button type="button" class="back-btn" id="btn-back" data-i18n-title="nav.back" title="返回"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M13 4 L7 10 L13 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <h2 data-i18n="settings.title">设置</h2>
+    </div>
+
+    
+    <div class="panel-body">
+
+    <h3 data-i18n="settings.head.llm">LLM（对话模型）</h3>
+    <label><span data-i18n="settings.baseUrl">接口地址 baseUrl</span><input id="s-llm-url" placeholder="https://api.openai.com/v1"></label>
+    <label><span data-i18n="settings.apiKey">API Key</span><input id="s-llm-key" type="password" placeholder="sk-..."></label>
+    <label><span data-i18n="settings.model">模型</span><input id="s-llm-model" placeholder="gpt-4o-mini"></label>
+    
+    <label><span data-i18n="settings.maxTokens">回复上限 (max_tokens)</span><input id="s-llm-max" type="number" min="64" step="100" placeholder="1200">
+      <small class="hint-sub" data-i18n="settings.maxTokens.hint">一次回复最多用多少 token（含模型的思考）。她说一半断掉、或出现「（模型没有返回内容）」时，把它调大（比如 2000～3000）。</small>
+    </label>
+
+    <h3 data-i18n="settings.head.tts">TTS（语音输出）</h3>
+    <label><span data-i18n="settings.tts.provider">服务类型</span>
+      <select id="s-tts-provider">
+        <option value="openai_speech" data-i18n="settings.tts.provider.speech">OpenAI 标准（/audio/speech）</option>
+        <option value="openai" data-i18n="settings.tts.provider.openai">OpenAI 兼容（chat/completions）</option>
+        <option value="qwen" data-i18n="settings.tts.provider.qwen">Qwen / 百炼（DashScope 兼容）</option>
+        <option value="fish" data-i18n="settings.tts.provider.fish">Fish Audio</option>
+      </select>
+    </label>
+    <label><span data-i18n="settings.baseUrl">接口地址 baseUrl</span><input id="s-tts-url" placeholder="http://127.0.0.1:8082"></label>
+    <label><span data-i18n="settings.apiKey">API Key</span><input id="s-tts-key" type="password" data-i18n-ph="settings.ttsKeyPh" placeholder="（本地服务可留空）"></label>
+    <label><span data-i18n="settings.model">模型</span><input id="s-tts-model" placeholder="tts-1"></label>
+    <label><span data-i18n="settings.voiceId">音色 ID（普通）</span><input id="s-tts-voiceid" data-i18n-ph="settings.voiceIdPh" placeholder="Fish 的 reference_id / Qwen 的 preset 或 voice_id"></label>
+    <label><span data-i18n="settings.fishVoiceAsmr">音色 ID（ASMR）</span><input id="s-tts-voiceid-asmr" data-i18n-ph="settings.voiceIdAsmrPh" placeholder="留空＝沿用上面的普通音色（不会没声音）"></label>
+    <label class="row"><input id="s-tts-on" type="checkbox"> <span data-i18n="settings.voiceOn">启用语音朗读</span></label>
+    
+    <label><span data-i18n="settings.ttsLang">TTS 语言（聊天框始终中文）</span>
+      <select id="s-tts-lang">
+        
+        <option value="zh">中文</option>
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+      </select>
+    </label>
+    <p class="hint-sub" data-i18n="settings.ttsLang.hint">选中日语/英语后，织音会多写一行对应语言给语音用；聊天框、记忆、日记**始终是中文**。</p>
+    
+    <label class="row"><input id="s-narr-on" type="checkbox"> <span data-i18n="settings.narration">额外旁白</span></label>
+    <p class="hint-sub" data-i18n="settings.narration.hint">开启后，织音将在回复中额外输出一行「旁白：」，用于描述场景与动作。旁白仅作显示，不参与朗读；关闭后仅停止此行，她自行书写的括号旁白仍会正常显示。</p>
+    
+    <p class="hint-sub" data-i18n="settings.ttsAsmrHint">切换方式：顶栏的 ASMR 键。打开后按 ASMR 模式说话，并使用上面的 ASMR 音色 ID。</p>
+
+    
+    <h3 data-i18n="settings.head.lang">语言</h3>
+    <label><span data-i18n="settings.lang">界面语言</span><select id="s-lang-ui"></select></label>
+    <p class="hint-sub" data-i18n="settings.langUiHint">只改界面文字。织音说的语言固定是**中文**（基准）；要不要日文语音由上面的「TTS 日语」开关决定。</p>
+
+    <h3 data-i18n="settings.persona">角色设定</h3>
+    <label><span data-i18n="prompt.chara">角色设定提示词</span>
+      <textarea id="s-prompt-chara" rows="5" data-i18n-ph="prompt.charaPh" placeholder="留空＝使用内置默认人设"></textarea>
+    </label>
+    <p class="hint-sub" data-i18n="prompt.charaHint">编辑角色设定或恢复默认；系统控制规则（输出格式、语音标签、语言契约）保持不变。</p>
+    
+    <div class="sub-acts">
+      <button type="button" class="mini-btn" id="btn-prompt-reset-chara" data-i18n="prompt.reset">恢复默认</button>
+      <span class="hint-sub" id="prompt-state-chara"></span>
+    </div>
+
+    <label><span data-i18n="prompt.world">世界设定</span>
+      <textarea id="s-prompt-world" rows="5" data-i18n-ph="prompt.worldPh" placeholder="留空＝使用内置默认叙事规则"></textarea>
+    </label>
+    <p class="hint-sub" data-i18n="prompt.worldHint">编辑世界背景与叙事规则，支持恢复默认。</p>
+    <div class="sub-acts">
+      <button type="button" class="mini-btn" id="btn-prompt-reset-world" data-i18n="prompt.reset">恢复默认</button>
+      <span class="hint-sub" id="prompt-state-world"></span>
+    </div>
+
+    <h3 data-i18n="settings.longterm">长期记忆</h3>
+    <label class="row"><input id="s-ltm-on" type="checkbox"> <span data-i18n="settings.longtermOn">启用长期记忆</span></label>
+    
+    <p class="hint-sub" data-i18n="settings.longtermOff">关掉后她不会再参考记忆、也不会主动回想；但对话仍会被记下来，重新打开时会一并整理进去 —— 所以不会留下空白。</p>
+    <p class="hint-sub" data-i18n="settings.longtermHint">模型把对话整理成带日期和重要度的条目。每轮只挑相关的、最近的，以及告白 / 誓言 / 关系转折 / 重大事件注入；放不下的并入「概略」而不删除 —— 这些都会登记进下面的「超长期记忆」。</p>
+    
+    <div class="sub-acts">
+      <button type="button" class="mini-btn" id="btn-ltm-view" data-i18n="settings.archiveView">查看</button>
+      <button type="button" class="mini-btn" id="btn-ltm-now" data-i18n="settings.longtermNow">立即整理</button>
+      <button type="button" class="mini-btn" id="btn-ltm-clear" data-i18n="ltm.clear">清空记忆</button>
+      <span class="hint-sub" id="ltm-state"></span>
+    </div>
+    <div id="ltm-box" style="display:none">
+      <div class="ltm-list" id="ltm-list"></div>
+    </div>
+
+    
+    <section id="ultra-section">
+      <h3 data-i18n="settings.ultraMem">超长期记忆</h3>
+      <p class="hint-sub" data-i18n="settings.ultraMemHint">上面那些重要条目的永久索引，只增不减。平时不占 token；你问起往事时，她才从这里翻出最相关的 3 条。</p>
+      <div class="sub-acts">
+        <button type="button" class="mini-btn" id="btn-archive-view" data-i18n="settings.archiveView">查看</button>
+        
+        <button type="button" class="mini-btn" id="btn-archive-now" data-i18n="settings.longtermNow">立即整理</button>
+        <button type="button" class="mini-btn" id="btn-ltm-test" data-i18n="settings.ltmTest">测试模型适配</button>
+      </div>
+      
+      <div class="hint-sub" id="ultra-state"></div>
+      
+      <div id="archive-box" style="display:none">
+        <div class="ltm-list" id="archive-list"></div>
+        <div class="sub-acts">
+          <button type="button" class="mini-btn" id="btn-archive-clear" data-i18n="settings.archiveDelete">清空重要回忆</button>
+          <span class="hint-sub" id="archive-state"></span>
+        </div>
+      </div>
+      
+      <div class="hint-sub" id="ltm-selftest" style="white-space:pre-wrap"></div>
+    </section>
+
+    
+
+    
+    <section id="hair-section">
+      <h3 data-i18n="settings.hairHead">发型</h3>
+      <p class="hint-sub" data-i18n="settings.hairHint">手动切换，会自动保存（重启后仍在）。再点一次选中的那个就回到原生发型。</p>
+      <section id="hair-panel" class="ex-panel"></section>
+    </section>
+
+    
+    <section id="l2d-model-section">
+      <h3 data-i18n="l2d.model">立绘模型</h3>
+      <p class="hint-sub" data-i18n="l2d.modelHint">导入你自己的 Live2D 模型；导入后可在下面切换。</p>
+      <div id="l2d-model-list" class="ex-panel"></div>
+      
+      <div class="sub-acts">
+        <button id="btn-l2d-import" class="mini-btn" data-i18n="l2d.import">导入模型</button>
+        <button id="btn-l2d-import-zip" class="mini-btn" data-i18n="l2d.importZip">导入 zip</button>
+        <span id="l2d-model-status" class="hint-sub" style="margin:0"></span>
+      </div>
+      
+      <input type="file" id="l2d-zip-input" accept=".zip,application/zip" class="hidden">
+      
+      <div id="l2d-map-wrap" class="hidden" style="margin-top:8px">
+        <p class="hint-sub" style="margin:0 0 4px" data-i18n="l2d.mapHint">这个模型里有些表情叫法不同，选一下对应关系（按名字对不上就会缺一味表情）。</p>
+        <div id="l2d-map-body" class="ex-panel"></div>
+      </div>
+    </section>
+
+    
+    <section id="l2d-cap-section">
+      <h3 data-i18n="l2d.capHead">能力报告（这个模型能让哪些功能生效）</h3>
+      <p class="hint-sub" data-i18n="l2d.capHint">全部依据模型文件本身判定，不改任何现有行为。</p>
+      <div id="l2d-cap-body" class="hint-sub"></div>
+    </section>
+
+    
+    
+    <h3 data-i18n="settings.head.web">联网（天气 / 搜索）</h3>
+    <p class="hint-sub" data-i18n="settings.webHint">天气用 Open-Meteo，免注册、不要 key。网页搜索需要你自己申请一个搜索服务的 key（各家都有免费额度，个人用根本用不完）。查到的内容只会随"这一轮对话"交给模型参考，不会写进长期记忆、日记或回忆。</p>
+    <label><span data-i18n="settings.webCity">城市（天气）</span><input id="s-web-city" placeholder="上海"></label>
+    <label><span data-i18n="settings.webProvider">搜索服务商</span>
+      <select id="s-web-provider"></select></label>
+    <label><span data-i18n="settings.webKey">搜索 API Key</span><input id="s-web-key" type="password" placeholder="留空 = 不开启网页检索"></label>
+    
+    <div class="sub-acts">
+      <button type="button" class="mini-btn" id="s-web-test" data-i18n="web.test">测试连接</button>
+    </div>
+    
+    <p class="hint-sub" id="s-web-status" aria-live="polite"></p>
+    <p class="hint-sub" data-i18n="settings.webSearchHint">什么时候会去查：你明确说「帮我查一下 / 搜索一下 / 新闻」这类话的时候。刻意做得不宽 —— 太宽会白花搜索额度。</p>
+
+    
+    <label><span data-i18n="settings.imgKeep">图片缓存上限</span><select id="s-img-keep"></select></label>
+    <div class="sub-acts">
+      <button type="button" class="mini-btn" id="s-img-clear" data-i18n="settings.imgClear">清空图片缓存</button>
+<button type="button" class="mini-btn" id="s-cover-clear" data-i18n="settings.coverClear">清理封面缓存</button>
+    </div>
+    <p class="hint-sub" id="s-img-status" aria-live="polite"></p>
+    <p class="hint-sub" data-i18n="settings.imgHint">0 = 不限。超出上限时**最旧的先删**（收藏的卡片里的图不删）；被删掉的图在回忆里显示 [图片]。</p>
+
+    <h3 data-i18n="settings.head.tex" id="s-tex-head">立绘模式</h3>
+    <label id="s-tex-row"><span data-i18n="settings.texTier">模式</span>
+      <select id="s-tex-tier">
+        <option value="full" data-i18n="settings.texTier.full">原画模式</option>
+        <option value="2048" data-i18n="settings.texTier.perf">性能模式</option>
+      </select></label>
+    <p class="hint-sub hidden" id="s-tex-note" data-i18n="settings.texTierNote">当前用的是导入模型：贴图档位只对内置模型可用，所以这里暂不可选。</p>
+    <p class="hint-sub" data-i18n="settings.texTierHint" id="s-tex-hint">原画模式 = 原图贴图（最清晰；贴图最大 8192×8192，占显存多、手机加载慢）。性能模式 = 预生成的 2048 贴图（显存占用与加载时间大幅下降，清晰度略低）。两者用的是同一个模型文件 ⇒ 动作、表情、物理、视线跟随完全一样。切换后立绘会重新加载，聊天不受影响。</p>
+
+    
+    <label><span data-i18n="settings.exprHold">表情保持时长</span>
+      <select id="s-expr-hold">
+        <option value="10" data-i18n="settings.exprHold.s10">10 秒</option>
+        <option value="20" data-i18n="settings.exprHold.s20">20 秒</option>
+        <option value="40" data-i18n="settings.exprHold.s40">40 秒</option>
+        <option value="0" data-i18n="settings.exprHold.off">不自动恢复</option>
+      </select></label>
+    <p class="hint-sub" data-i18n="settings.exprHoldHint">她按对话换的表情（脸红、笑…）超过这个时长就自己变回默认微笑，不会一直挂着。手动点的表情不受影响；她正在说话时不会切（等这句念完）。</p>
+
+    <h3 data-i18n="settings.data">数据</h3>
+    <p class="hint-sub" data-i18n="settings.exportHint">导出存档 = 一键打包全部进度：设置与人设 · 全部存档槽 · 回忆 · 珍藏 · 长期记忆 · 闹钟。导出与存档都不包含 API Key（避免分享时泄露），换机器后需要重新填写。</p>
+    <div class="sub-acts">
+      <button type="button" class="mini-btn" id="btn-export" data-i18n="slot.export">导出存档</button>
+      <button type="button" class="mini-btn" id="btn-import" data-i18n="slot.import">导入存档</button>
+      <button type="button" class="mini-btn" id="btn-undo-import" data-i18n="settings.undoImport" disabled>撤销导入</button>
+      <input type="file" id="file-import" accept="application/json,.json" class="hidden">
+    </div>
+    <div class="ltm-list" id="slot-list"></div>
+    <div class="sub-acts">
+      <select id="s-slot" class="mini-sel"></select>
+      <button type="button" class="mini-btn" id="btn-slot-save" data-i18n="slot.save">保存</button>
+      <button type="button" class="mini-btn" id="btn-slot-load" data-i18n="slot.load" disabled>读取</button>
+      <span class="hint-sub" id="slot-state"></span>
+    </div>
+    </div>
+
+    
+    <p class="hint" id="settings-hint"></p>
+  </div>
+</div>
+
+<div id="memory" class="hidden">
+  <div class="panel" data-size="fixed">
+    <div class="panel-head">
+      <button type="button" class="back-btn" id="btn-mem-back" data-i18n-title="nav.back" title="返回"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M13 4 L7 10 L13 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <h2 data-i18n="memory.title">回忆</h2>
+    </div>
+    <div class="mem-head">
+      <input type="search" id="mem-search" data-i18n-ph="search.memPh" placeholder="搜索对话内容…">
+      <button type="button" class="mini-btn" id="btn-mem-fav" data-i18n="memory.favOnly">只看收藏</button>
+      <button type="button" class="mini-btn" id="btn-mem-clear" data-i18n="memory.clearLog">清空对白</button>
+    </div>
+    <p class="hint-sub" data-i18n="memory.clearLogHint">只清空回忆页的「近期对白」，长期记忆卡片会保留。此操作不可撤销。</p>
+    <div class="mem-list" id="mem-list"></div>
+    
+    <p class="hint" id="mem-state"></p>
+  </div>
+</div>
+
+<div id="todo" class="hidden">
+  <div class="panel" data-size="fixed">
+    <div class="panel-head">
+      <button type="button" class="back-btn" id="btn-todo-back" data-i18n-title="nav.back" title="返回"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M13 4 L7 10 L13 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <h2 data-i18n="todo.title">待办</h2>
+    </div>
+    <div class="mem-head">
+      <span class="hint-sub todo-count" id="todo-count"></span>
+      <button type="button" class="mini-btn" id="btn-todo-clear" data-i18n="todo.clear">清空</button>
+    </div>
+    <div class="mem-list todo-list" id="todo-list"></div>
+    
+    <p class="hint" id="todo-state"></p>
+    
+    <button type="button" id="btn-todo-add" class="todo-plus" data-i18n-title="todo.add" title="添加" aria-label="添加">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M12 5.5V18.5"></path><path d="M5.5 12H18.5"></path>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<div id="pomo" class="hidden">
+  <div class="panel" data-size="fixed">
+    <div class="panel-head">
+      <button type="button" class="back-btn" id="btn-pomo-back" data-i18n-title="nav.back" title="返回"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M13 4 L7 10 L13 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <h2 data-i18n="pomo.title">番茄钟</h2>
+    </div>
+    <div class="mem-head">
+      <span class="hint-sub" id="pomo-stats"></span>
+      <span class="hint-sub" id="pomo-phase"></span>
+    </div>
+    <div class="pomo-body">
+      
+      <div class="pomo-clock" id="pomo-clock">25:00</div>
+      <p class="hint-sub pomo-note" id="pomo-note"></p>
+      <div class="pomo-row">
+        
+        
+        <button type="button" class="primary" id="btn-pomo-main" data-i18n="pomo.start">开始</button>
+        <button type="button" class="mini-btn" id="btn-pomo-stop" data-i18n="pomo.reset">重置</button>
+      </div>
+      <div class="pomo-form">
+        <label><span data-i18n="pomo.cfg.focus">专注（分钟）</span><input id="s-pomo-focus" type="number" min="1" max="180" step="1"></label>
+        <label><span data-i18n="pomo.cfg.short">短休（分钟）</span><input id="s-pomo-short" type="number" min="1" max="60" step="1"></label>
+        <label><span data-i18n="pomo.cfg.long">长休（分钟）</span><input id="s-pomo-long" type="number" min="1" max="60" step="1"></label>
+        <label><span data-i18n="pomo.cfg.every">每几个后长休</span><input id="s-pomo-every" type="number" min="2" max="8" step="1"></label>
+        <label><span data-i18n="pomo.cfg.plan">本次计划（个）</span><input id="s-pomo-plan" type="number" min="1" max="12" step="1"></label>
+      </div>
+      <div class="pomo-form">
+        <label><span data-i18n="pomo.bind">绑定待办</span>
+          <select id="s-pomo-bind"><option value="" data-i18n="pomo.bindNone">不绑定（纯倒计时）</option></select>
+        </label>
+      </div>
+      
+      <div class="pomo-confirm hidden" id="pomo-confirm">
+        <span data-i18n="pomo.doneAsk">这条待办完成了吗？</span>
+        <button type="button" class="mini-btn" id="btn-pomo-done" data-i18n="pomo.doneYes">完成了</button>
+        <button type="button" class="mini-btn" id="btn-pomo-notyet" data-i18n="pomo.doneNo">还没</button>
+      </div>
+      
+      <div class="pomo-sound hidden" id="pomo-sound">
+        
+        <div class="pomo-np">
+          <span class="pomo-np-mid">
+            <span class="pomo-np-t1" id="pomo-sound-title">—</span>
+            <span class="pomo-np-t2" id="pomo-sound-sub"></span>
+            <span class="pomo-np-bar">
+              <span class="pomo-np-time" id="pomo-sound-cur">0:00</span>
+              <span class="pomo-np-seek"><i id="pomo-sound-fill"></i></span>
+              <span class="pomo-np-time" id="pomo-sound-dur">0:00</span>
+            </span>
+          </span>
+          <button type="button" class="pomo-np-play" id="btn-pomo-snd-play"
+                  data-i18n-title="pomo.snd.play" title="播放/暂停">
+            <svg class="ico-play" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M7 4.6 L15.4 10 L7 15.4 z" fill="currentColor"/></svg>
+            <svg class="ico-pause" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M6.8 4.8 h2.5 v10.4 H6.8 z M10.7 4.8 h2.5 v10.4 h-2.5 z" fill="currentColor"/></svg>
+          </button>
+        </div>
+        <div class="pomo-snd-tools">
+          <span class="pomo-seg">
+            <button type="button" id="btn-pomo-snd-tab-lofi" data-i18n="pomo.snd.lofi">Lofi</button>
+            <button type="button" id="btn-pomo-snd-tab-amb" data-i18n="pomo.snd.amb">环境音</button>
+            
+            <button type="button" id="btn-pomo-snd-tab-custom" data-i18n="pomo.snd.custom">自定义</button>
+          </span>
+          <span class="pomo-sound-sp"></span>
+          
+          <button type="button" class="pomo-rbtn" id="btn-pomo-snd-mode" data-mode="one"
+                  data-i18n-title="pomo.snd.mode" title="播放模式">
+            
+            <svg class="ico-mode-one" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+              <path d="M5.3 6.6 A5.1 5.1 0 0 1 14.9 6.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M14.9 13.4 A5.1 5.1 0 0 1 5.3 13.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M12.4 4.2 L14.9 6.6 L12.0 8.2 z" fill="currentColor"/>
+              <path d="M7.6 15.8 L5.1 13.4 L8.0 11.8 z" fill="currentColor"/>
+              <text x="10" y="13.4" text-anchor="middle" font-size="8.2" font-weight="700" fill="currentColor">1</text>
+            </svg>
+            
+            <svg class="ico-mode-seq" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+              <path d="M5.3 6.6 A5.1 5.1 0 0 1 14.9 6.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M14.9 13.4 A5.1 5.1 0 0 1 5.3 13.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M12.4 4.2 L14.9 6.6 L12.0 8.2 z" fill="currentColor"/>
+              <path d="M7.6 15.8 L5.1 13.4 L8.0 11.8 z" fill="currentColor"/>
+            </svg>
+            
+            <svg class="ico-mode-shuffle" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+              <path d="M3.6 6.6 h2.2 c1.1 0 2.1 .55 2.7 1.5 l2.4 3.8 c.6 .95 1.6 1.5 2.7 1.5 h2.3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M13.7 4.2 L16.3 6.6 L13.7 9.0 z" fill="currentColor"/>
+              <path d="M3.6 13.4 h2.2 c1.1 0 2.1 -.55 2.7 -1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M13.7 11.0 L16.3 13.4 L13.7 15.8 z" fill="currentColor"/>
+            </svg>
+          </button>
+
+          <button type="button" class="pomo-rbtn" id="btn-pomo-snd-prev" data-i18n-title="pomo.snd.prev" title="上一首">
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5.6 5 h1.7 v10 H5.6 z M15 5 L8.4 10 L15 15 z" fill="currentColor"/></svg>
+          </button>
+          <button type="button" class="pomo-rbtn" id="btn-pomo-snd-next" data-i18n-title="pomo.snd.next" title="下一首">
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M14.4 5 h1.7 v10 h-1.7 z M5 5 L11.6 10 L5 15 z" fill="currentColor"/></svg>
+          </button>
+          <button type="button" class="pomo-rbtn" id="btn-pomo-sound-expand" aria-expanded="true"
+                  data-i18n-title="pomo.snd.list" title="列表">
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M4.5 6 h11 M4.5 10 h11 M4.5 14 h11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div class="pomo-snd-vol">
+          <span class="hint-sub" data-i18n="pomo.snd.vol">音量</span>
+          <input type="range" id="s-pomo-vol" min="0" max="100" step="1">
+          <span class="hint-sub" data-i18n="pomo.snd.gain">增益</span>
+          <input type="range" id="s-pomo-gain" min="0" max="24" step="1">
+          <span class="hint-sub" id="pomo-gain-val">0dB</span>
+        </div>
+        <div class="pomo-snd-vol">
+          <button type="button" class="mini-btn" id="btn-pomo-snd-folder" data-i18n="pomo.snd.folder">自选文件夹</button>
+          <span class="pomo-sound-sp"></span>
+          <label class="row"><input id="s-pomo-follow" type="checkbox"> <span data-i18n="pomo.snd.follow">跟随番茄钟自动播放</span></label>
+        </div>
+        <input type="file" id="s-pomo-folder-input" webkitdirectory multiple class="hidden">
+        <div class="pomo-sound-list hidden" id="pomo-sound-list"></div>
+      </div>
+    </div>
+    
+    <p class="hint" id="pomo-state"></p>
+  </div>
+</div>
+
+<div id="diary" class="hidden">
+  <div class="panel" data-size="fixed">
+    <div class="panel-head">
+      <button type="button" class="back-btn" id="btn-diary-back" data-i18n-title="nav.back" title="返回"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M13 4 L7 10 L13 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <h2 data-i18n="diary.title">织音眼中的你</h2>
+    </div>
+    <div class="mem-head">
+      <button type="button" class="mini-btn" id="btn-diary-flush" data-i18n="diary.consolidate">整理今天</button>
+      <button type="button" class="mini-btn" id="btn-diary-clear" data-i18n="diary.clear">清空日记</button>
+    </div>
+    <p class="hint-sub" data-i18n="diary.hint">打开顶栏的「日记」后，和织音的对话会被她整理成日记（一天一篇）。关闭日记模式时会自动整理一次。</p>
+
+    
+    <div class="diary-pager">
+      <button type="button" class="mini-btn diary-nav" id="btn-diary-prev" data-i18n-title="diary.prev" title="前一天">&#8249;</button>
+      <input type="date" id="diary-date" data-i18n-title="diary.jump" title="跳到某一天">
+      <button type="button" class="mini-btn diary-nav" id="btn-diary-next" data-i18n-title="diary.next" title="后一天">&#8250;</button>
+      <button type="button" class="mini-btn" id="btn-diary-today" data-i18n="diary.today">今天</button>
+    </div>
+    <div class="diary-page" id="diary-page">
+      <div class="diary-date" id="diary-page-date"></div>
+      <div class="diary-text" id="diary-page-text"></div>
+      <textarea class="diary-note" id="diary-page-note" rows="3"></textarea>
+    </div>
+    
+    <p class="hint" id="diary-state"></p>
+  </div>
+</div>
+
+<script src="../vendor/cubism/Core/live2dcubismcore.min.js"></script>
+
+<script src="js/config.js?v=20261005f"></script>
+<script src="js/store.js"></script>       
+<script src="js/i18n.js?v=20261007d"></script>
+
+<script src="js/segments.js?v=20261007d"></script>
+<script src="js/api.js?v=20261007h"></script>
+
+<script src="js/prompts.js"></script>      
+<script src="js/longmem.js?v=20261011a"></script>      
+<script src="js/weather.js"></script>     
+<script src="js/websrc.js?v=20261005g"></script>      
+<script src="js/recall.js?v=20261005e"></script>      
+<script src="js/imgstore.js?v=20261005f"></script>    
+<script src="js/diary.js"></script>        
+<script src="js/dialoglog.js"></script>    
+<script src="js/todo.js?v=20261005e"></script>
+    <script src="js/pomo.js?v=20261004a"></script>
+    <script src="js/pomo-audio.js?v=20261005j"></script>
+    <script src="js/pomo-bubble.js?v=20261005p"></script>          
+<script src="js/voicecache.js?v=20261005f"></script>   
+<script src="js/savedata.js?v=20261005f"></script>     
+<script src="js/lyrics.js"></script>       
+<script src="js/mouth-env.js"></script>     
+<script src="js/audio-lib.js?v=20261005n"></script>    
+<script src="js/player.js?v=20261005i"></script>       
+<script src="js/shell.js"></script>        
+<script src="js/min.js?v=20261007d"></script>
+
+<script src="js/l2d-store.js?v=20261011a"></script>   
+<script src="js/l2d-capability.js?v=20261011a"></script>   
+<script type="module" src="js/l2d-stage.js?v=20261011a"></script>
+</body>
+</html>

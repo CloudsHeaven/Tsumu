@@ -1,0 +1,21 @@
+{
+  "name": "tsumu-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tsumu 人声分离工具：把歌曲的人声提取成 60Hz 包络 + 16kHz 单声道 WAV，供织音口型驱动使用。独立于主项目，只按命名约定输出文件。",
+  "main": "separate.js",
+  "bin": {
+    "tsumu-separate": "separate.js"
+  },
+  "scripts": {
+    "test": "node test/test-dsp.js",
+    "inspect": "node test/inspect.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "mpg123-decoder": "^1.0.3",
+    "onnxruntime-node": "^1.30.0"
+  }
+}

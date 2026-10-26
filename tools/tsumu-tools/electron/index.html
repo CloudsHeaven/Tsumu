@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>织音 · 工具</title>
+<style>
+  /* ★ 2026-10-23 视觉统一：色板直接取自主项目 web/css/min.css 的 :root
+     （--surface-0 / --surface-2 / 正文 #ece7f2 / 标题 #d9cffb / 图标 #b9b1c9 /
+      浮层 rgba(16,14,24,.88) / 强调紫 143,111,216）
+     ⇒ 工具和织音看起来像同一套产品 ✓ */
+  :root{
+    --bg:var(--surface-0); --card:var(--surface-2); --card2:#1e1a29;
+    --line:rgba(255,255,255,.14); --line-strong:rgba(255,255,255,.30);
+    --fg:#ece7f2; --dim:#b9b1c9; --dim2:#8a8299;
+    --acc:#8f6fd8; --acc-soft:rgba(143,111,216,.22); --acc-text:#d9cffb;
+    --glass:rgba(16,14,24,.88);
+    --ok:#9ece6a; --warn:#e0af68; --err:#f7768e;
+    --surface-0:#0b0910; --surface-2:#17141f;
+    --font:"Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:14px/1.6 "Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+    -webkit-user-select:none; user-select:none; overflow:hidden;
+  }
+  /* ★ 顶部标签栏（2026-10-23 用户点单）：高度必须与 main.js 的 TAB_H=52 一致 ✓ */
+  .tabbar{height:52px;flex:0 0 auto;display:flex;align-items:center;gap:8px;
+          padding:0 18px;background:#0c0e14;border-bottom:1px solid var(--line)}
+  .tabbar .tab{background:transparent;border:1px solid transparent;border-radius:9px;
+               padding:6px 14px;color:var(--dim);font-size:13px}
+  .tabbar .tab:hover:not(.on){background:#1b1f28;color:var(--fg)}
+  .tabbar .tab.on{background:var(--card2);border-color:var(--line);color:var(--fg);font-weight:600}
+  .tabbar .tag{margin-left:auto;color:var(--dim2);font-size:11.5px}
+  /* ★ 自绘标题栏（主项目同款做法：-webkit-app-region:drag + 子元素 no-drag）2026-10-23 */
+  .titlebar{height:36px;flex:0 0 auto;display:flex;align-items:center;gap:10px;
+            padding:0 8px 0 16px;background:linear-gradient(#151220,#0e0b16);
+            border-bottom:1px solid rgba(255,255,255,.10);
+            -webkit-app-region:drag;user-select:none}
+  .titlebar .tb-title{font-size:12.5px;letter-spacing:.4px;color:var(--dim)}
+  .titlebar .tb-sp{flex:1}
+  .titlebar button{-webkit-app-region:no-drag;background:transparent;border:0;color:var(--dim);
+                    width:38px;height:26px;border-radius:7px;font-size:14px;line-height:1;cursor:pointer}
+  .titlebar button:hover{background:rgba(255,255,255,.10);color:var(--fg)}
+  .titlebar button.close:hover{background:rgba(247,118,142,.85);color:#160c10}
+  .wrap{height:calc(100vh - 88px);display:flex;flex-direction:column;gap:12px;padding:14px 18px 16px}
+  header h1{margin:0;font-size:19px;letter-spacing:.5px}
+  header p{margin:4px 0 0;color:var(--dim);font-size:12.5px}
+  .model{margin-top:6px;color:var(--dim2);font-size:11.5px;font-family:Consolas,monospace}
+  .model.bad{color:var(--err)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-top-color:var(--line-strong);
+        border-radius:14px;padding:14px 16px;
+        backdrop-filter:blur(22px) saturate(1.35);-webkit-backdrop-filter:blur(22px) saturate(1.35)}
+  .row{display:flex;align-items:center;gap:10px}
+  .grow{flex:1}
+
+  button{
+    font:inherit; color:var(--fg); background:var(--card2);
+    border:1px solid var(--line); border-radius:10px; padding:8px 16px; cursor:pointer;
+    transition:background .15s,border-color .15s,opacity .15s;
+  }
+  button:hover:not(:disabled){background:#262b37;border-color:#39404f}
+  button:disabled{opacity:.4;cursor:default}
+  button.primary{background:var(--acc-soft);border-color:rgba(143,111,216,.55);color:var(--acc-text);font-weight:600}
+  button.primary:hover:not(:disabled){background:rgba(143,111,216,.32);border-color:rgba(163,131,236,.7)}
+  button.ghost{background:transparent}
+
+  .path{
+    font-family:Consolas,monospace;font-size:12px;min-width:0;width:100%;
+    background:#0c0e14;border:1px solid var(--line);border-radius:9px;
+    padding:8px 11px;color:var(--fg);
+    -webkit-user-select:text;user-select:text;
+  }
+  .path::placeholder{color:var(--dim2)}
+  .path:focus{outline:none;border-color:var(--acc)}
+
+  .opts{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap}
+  .opts label{display:flex;align-items:center;gap:6px;color:var(--dim);font-size:12.5px;cursor:pointer}
+  .opts input{accent-color:var(--acc);cursor:pointer}
+  .hint{color:var(--dim2);font-size:11px}
+
+  .list{margin:10px 0 0;padding:0;list-style:none;max-height:190px;overflow:auto}
+  .list li{display:flex;align-items:center;gap:10px;padding:7px 2px;border-top:1px solid #20242e}
+  .list li:first-child{border-top:0}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--warn);flex:0 0 auto}
+  .dot.ok{background:var(--ok)} .dot.run{background:var(--acc);animation:pulse 1.2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+  .fname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tag{font-size:11.5px;color:var(--dim2);flex:0 0 auto}
+  .tag.ok{color:var(--ok)} .tag.run{color:var(--acc)} .tag.err{color:var(--err)}
+
+  .bar{height:8px;background:#0c0e14;border-radius:5px;overflow:hidden;margin-top:10px}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5b8bf0,#9ece6a);
+         border-radius:5px;transition:width .25s ease}
+  .stat{display:flex;align-items:baseline;gap:10px}
+  .stat b{font-weight:600}
+  .pct{font-family:Consolas,monospace;font-size:13px;color:var(--dim)}
+
+  .log{margin:10px 0 0;padding:0;list-style:none;font-size:12px;color:var(--dim);
+       max-height:132px;overflow:auto;font-family:Consolas,monospace}
+  .log li{padding:2px 0}
+
+  .big{font-size:15px}
+  .ok{color:var(--ok)} .err{color:var(--err)} .warn{color:var(--warn)}
+  .foot{margin-top:auto;display:flex;gap:10px;align-items:center}
+  .foot .sp{flex:1}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+<div class="titlebar">
+  <span class="tb-title">织音 · 工具</span>
+  <span class="tb-sp"></span>
+  <button id="tbMin" title="最小化">—</button>
+  <button id="tbClose" class="close" title="关闭">✕</button>
+</div>
+<div class="tabbar">
+  <button class="tab on" id="tabSep">分离工具</button>
+  <button class="tab" id="tabTap">打点工具</button>
+  <span class="tag" id="tabTag">把歌拆成人声包络 / 或给歌词打时间轴</span>
+</div>
+<div class="wrap">
+
+  <header>
+    <h1>织音 · 人声分离</h1>
+    <p>给口型准备「人声包络」。选一个音乐文件夹 → 开始分离，产物写在每首歌旁边。</p>
+    <div class="model" id="model"></div>
+  </header>
+
+  <section class="card">
+    <div class="row">
+      <button id="pick" class="primary">选择文件夹…</button>
+      <input id="path" class="path grow" type="text" spellcheck="false"
+             placeholder="（还没选）也可以直接把路径粘贴进来，回车确认">
+    </div>
+    <div class="opts">
+      <label><input type="checkbox" id="force"> 重算已完成的</label>
+      <label><input type="checkbox" id="stems"> 同时输出伴奏<span class="hint">（多占一倍空间）</span></label>
+      <label><input type="checkbox" id="gpu" checked> 用显卡加速<span class="hint">（DirectML · 约 2.5× · 已实测；不可用时自动回落 CPU）</span></label>
+    </div>
+  </section>
+
+  <section class="card" id="listCard" hidden>
+    <div class="row">
+      <span class="stat" id="sum"></span>
+      <span class="grow"></span>
+      <button id="run" class="primary">开始分离</button>
+    </div>
+    <ul class="list" id="list"></ul>
+  </section>
+
+  <section class="card" id="progCard" hidden>
+    <div class="row">
+      <span id="phase" class="grow">…</span>
+      <span class="pct" id="pct">0%</span>
+    </div>
+    <div class="bar"><i id="fill"></i></div>
+    <ul class="log" id="log"></ul>
+  </section>
+
+  <section class="card" id="doneCard" hidden>
+    <div class="row">
+      <span class="big grow" id="doneText"></span>
+      <button id="revealBtn" class="ghost">打开文件夹</button>
+    </div>
+    <div class="hint" style="margin-top:8px">
+      接下来：打开织音 → 音乐库选这个文件夹 → 列表里只会出现歌曲本身（人声/伴奏文件不会被列出来）。
+    </div>
+  </section>
+
+  <div class="foot">
+    <span class="hint" id="footHint"></span>
+    <span class="sp"></span>
+    <button id="quitBtn" class="ghost">关闭工具</button>
+  </div>
+
+</div>
+
+<script>const $ = (id) => document.getElementById(id);
+let dir = null;
+let runDir = null;
+let files = [];
+let running = false;
+let todoTotal = 0, doneCount = 0;
+(async () => {
+  const m = await api.meta();
+  if (m.modelErr) {
+    $("model").textContent = "⚠ 模型不可用：" + m.modelErr;
+    $("model").className = "model bad";
+  } else {
+    $("model").textContent = "模型 " + m.model;
+  }
+  api.onEvent(onEvent);
+})();
+$("pick").onclick = async () => {
+  const p = await api.pick();
+  if (!p) return;
+  $("path").value = p;
+  applyPath();
+};
+function applyPath() {
+  const p = ($("path").value || "").trim().replace(/^"|"$/g, "");
+  if (!p) return;
+  $("path").value = p;
+  if (p === dir) return;
+  dir = p;
+  $("doneCard").hidden = true;
+  $("progCard").hidden = true;
+  $("footHint").textContent = "";
+  scan();
+}
+$("path").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    applyPath();
+  }
+});
+$("path").addEventListener("blur", () => applyPath());
+async function scan(target) {
+  const d = target || dir;
+  if (!d) return;
+  const r = await api.scan(d);
+  if (r.error) {
+    alert(r.error);
+    return;
+  }
+  dir = d;
+  files = r.files;
+  const done = files.filter((f) => f.done).length;
+  const todo = files.length - done;
+  $("listCard").hidden = false;
+  $("sum").innerHTML = "共 <b>" + files.length + "</b> 首 · 待处理 <b>" + todo + "</b> · 已完成 <b>" + done + "</b>";
+  const ul = $("list");
+  ul.textContent = "";
+  for (const f of files) {
+    const li = document.createElement("li");
+    const dot = document.createElement("span");
+    dot.className = "dot" + (f.done ? " ok" : "");
+    const nm = document.createElement("span");
+    nm.className = "fname";
+    nm.textContent = f.name;
+    nm.title = f.path;
+    const tag = document.createElement("span");
+    tag.className = "tag" + (f.done ? " ok" : "");
+    tag.textContent = f.done ? "已完成" : "待处理";
+    li.append(dot, nm, tag);
+    ul.appendChild(li);
+  }
+  $("run").disabled = todo === 0 && !$("force").checked;
+  $("run").textContent = todo === 0 ? "没有待处理的歌" : "开始分离 " + todo + " 首";
+}
+$("force").onchange = () => {
+  if (files.length && !running) {
+    const todo = files.filter((f) => !f.done || $("force").checked).length;
+    $("run").disabled = todo === 0;
+    $("run").textContent = todo === 0 ? "没有待处理的歌" : "开始分离 " + todo + " 首";
+  }
+};
+$("run").onclick = async () => {
+  runDir = dir;
+  const r = await api.run({
+    dir,
+    force: $("force").checked,
+    stems: $("stems").checked,
+    gpu: $("gpu").checked
+  });
+  if (r.error) {
+    alert(r.error);
+    return;
+  }
+  running = true;
+  doneCount = 0;
+  $("pick").disabled = true;
+  $("run").disabled = true;
+  $("progCard").hidden = false;
+  $("doneCard").hidden = true;
+  $("log").textContent = "";
+  setProgress(0);
+  $("phase").textContent = "准备中…";
+};
+function setProgress(p) {
+  p = Math.max(0, Math.min(1, p));
+  $("fill").style.width = (p * 100).toFixed(1) + "%";
+  $("pct").textContent = Math.round(p * 100) + "%";
+}
+function logLine(text, cls) {
+  const li = document.createElement("li");
+  if (cls) li.className = cls;
+  li.textContent = text;
+  const ul = $("log");
+  ul.appendChild(li);
+  ul.scrollTop = ul.scrollHeight;
+  while (ul.children.length > 120) ul.removeChild(ul.firstChild);
+}
+function markRow(name, cls, tagText) {
+  for (const li of $("list").children) {
+    const nm = li.querySelector(".fname");
+    if (nm && nm.textContent === name) {
+      const dot = li.querySelector(".dot");
+      const tag = li.querySelector(".tag");
+      dot.className = "dot" + (cls ? " " + cls : "");
+      tag.className = "tag" + (cls === "ok" ? " ok" : cls === "err" ? " err" : cls === "run" ? " run" : "");
+      if (tagText) tag.textContent = tagText;
+      return;
+    }
+  }
+}
+function onEvent(ev) {
+  switch (ev.type) {
+    case "plan":
+      todoTotal = ev.todo || 1;
+      if (ev.skipped) logLine("跳过已完成的 " + ev.skipped + " 首");
+      break;
+    case "step":
+      $("phase").textContent = ev.text;
+      break;
+    case "file":
+      if (ev.status === "skip") {
+        logLine("跳过 " + ev.name + "（已完成）");
+      } else {
+        $("phase").textContent = "解码 " + ev.name + "…";
+        markRow(ev.name, "run", "处理中");
+        logLine("▶ " + ev.name + (ev.total ? "（" + ev.index + "/" + ev.total + "）" : ""));
+      }
+      break;
+    case "chunk":
+      $("phase").textContent = "分离中 · 第 " + ev.i + "/" + ev.n + " 块";
+      setProgress((doneCount + (ev.i - 1) / ev.n) / todoTotal);
+      break;
+    case "file-done":
+      doneCount++;
+      setProgress(doneCount / todoTotal);
+      markRow(ev.name, "ok", "已完成");
+      logLine("  ✓ " + ev.name + "  " + ev.seconds.toFixed(1) + "s" + (ev.duration ? "  RTF=" + (ev.seconds / ev.duration).toFixed(2) : ""), "ok");
+      break;
+    case "file-error":
+      doneCount++;
+      setProgress(doneCount / todoTotal);
+      markRow(ev.name, "err", "失败");
+      logLine("  ✗ " + ev.name + "：" + ev.message, "err");
+      break;
+    case "done": {
+      running = false;
+      $("pick").disabled = false;
+      $("run").disabled = false;
+      setProgress(1);
+      $("phase").textContent = "结束";
+      const d = $("doneCard");
+      d.hidden = false;
+      const parts = [];
+      if (ev.ok) parts.push('<span class="ok">完成 ' + ev.ok + " 首</span>");
+      if (ev.skipped) parts.push("跳过 " + ev.skipped + " 首");
+      if (ev.failed) parts.push('<span class="err">失败 ' + ev.failed + " 首</span>");
+      $("doneText").innerHTML = parts.join(" · ") + (ev.seconds ? "　用时 " + ev.seconds.toFixed(0) + " 秒" : "");
+      if (ev.nothing) $("doneText").innerHTML = "这个文件夹里没有需要分离的歌（都已完成）";
+      $("footHint").textContent = ev.nothing ? "" : "产物：<曲名>.vocals.env（口型用）+ <曲名>.vocals.wav（可试听）";
+      logLine(ev.nothing ? "没有需要处理的歌" : "全部结束", ev.failed ? "err" : "ok");
+      scan(runDir || dir);
+      break;
+    }
+    case "error":
+      running = false;
+      $("pick").disabled = false;
+      $("run").disabled = false;
+      $("phase").textContent = "出错了";
+      logLine("✗ " + ev.message, "err");
+      alert("出错了：" + ev.message);
+      break;
+  }
+}
+$("revealBtn").onclick = () => api.reveal(dir);
+$("quitBtn").onclick = () => api.quit();
+let tabNow = "sep";
+async function setTab(which) {
+  const want = which === "tap" ? "tap" : "sep";
+  tabNow = want;
+  $("tabSep").classList.toggle("on", want === "sep");
+  $("tabTap").classList.toggle("on", want === "tap");
+  $("tabTag").textContent = want === "tap" ? "打点工具：拖入音频 → 贴歌词 → 空格打点 → 导出 LRC" : "分离工具：把歌拆成人声包络（.vocals.env）与人声 WAV";
+  try {
+    const r = await api.setTab(want);
+    if (r && !r.ok) $("footHint").textContent = "打点页没打开：electron\\tapper.html 缺失";
+  } catch (e) {
+    $("footHint").textContent = "切换失败：" + (e && e.message);
+  }
+}
+$("tabSep").onclick = () => setTab("sep");
+$("tbMin").onclick = () => api.minimize();
+$("tbClose").onclick = () => api.quit();
+$("tabTap").onclick = () => setTab("tap");
+</script>
+</body>
+</html>

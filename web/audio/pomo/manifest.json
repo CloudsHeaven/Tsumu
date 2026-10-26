@@ -1,0 +1,22 @@
+{
+    "v":  1,
+    "lofi":  [
+                 "pixel-quest-save-point.mp3",
+                 "warm-constellations.mp3",
+                 "temple-at-dawn.mp3",
+                 "dusk-between-stoops.mp3",
+                 "basement-groove-86.mp3",
+                 "cafe-da-tarde.mp3",
+                 "rain-on-the-boulevard.mp3",
+                 "3-am-echoes.mp3",
+                 "fireplace-loop.mp3",
+                 "3am-sink-light.mp3"
+             ],
+    "ambient":  [
+                    "cafe.ogg",
+                    "campfire.ogg",
+                    "fan.ogg",
+                    "ocean-waves.ogg",
+                    "rain.ogg"
+                ]
+}

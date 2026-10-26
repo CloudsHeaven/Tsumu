@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Tsumu 歌词打点器</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 14px 18px 40px; background: #14141a; color: #e8e8ef;
+         font: 14px/1.55 "Microsoft YaHei", "Segoe UI", system-ui, sans-serif; }
+  h1 { font-size: 17px; margin: 0 0 3px; }
+  .sub { color: #9a9ab0; font-size: 12px; margin-bottom: 12px; }
+  .panel { background: #1b1b24; border: 1px solid #2c2c3a; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .grow { flex: 1 1 240px; }
+  input[type=text], textarea { background: #101018; color: #cfd6e6; border: 1px solid #33334a;
+        border-radius: 8px; padding: 7px 9px; font: 13px/1.5 "Microsoft YaHei", monospace; }
+  input[type=text] { width: 100%; }
+  textarea { width: 100%; height: 132px; resize: vertical; }
+  label.fld { display: block; font-size: 12px; color: #8f8fa6; margin: 0 0 4px; }
+  button { background: #2b2b3a; color: #e8e8ef; border: 1px solid #3a3a4d; border-radius: 8px;
+           padding: 6px 11px; font-size: 13px; cursor: pointer; }
+  button:hover { background: #35354a; }
+  button.primary { background: #3a5f8a; border-color: #4a74a8; }
+  button.primary:hover { background: #46699a; }
+  button.ghost { background: transparent; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  audio { height: 34px; flex: 1 1 300px; min-width: 240px; }
+  .clock { font: 700 22px/1 ui-monospace, Consolas, monospace; color: #b8f0d0; min-width: 92px; text-align: center; }
+  .pill { font-size: 12px; color: #9a9ab0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { padding: 5px 7px; border-bottom: 1px solid #262633; text-align: left; vertical-align: middle; }
+  th { color: #8f8fa6; font-size: 12px; font-weight: 600; }
+  tr.now { background: #1f2b24; }
+  td.idx { width: 32px; color: #6c6c82; font: 700 13px ui-monospace, monospace; }
+  td.time { width: 116px; }
+  td.time input { width: 96px; background: #101018; color: #cfd6e6; border: 1px solid #33334a;
+                  border-radius: 6px; padding: 3px 6px; font: 13px ui-monospace, monospace; }
+  td.act { width: 158px; white-space: nowrap; }
+  .ko { color: #9aa4c4; font-size: 12px; margin-top: 1px; }
+  .hint { color: #8f8fa6; font-size: 12px; line-height: 1.9; }
+  kbd { background: #262633; border: 1px solid #3a3a4d; border-bottom-width: 2px; border-radius: 5px;
+        padding: 1px 6px; font: 12px ui-monospace, monospace; }
+  .warn { color: #f0b46a; }
+  .ok { color: #7ee0a8; }
+  #out { height: 170px; font: 12px/1.6 ui-monospace, monospace; }
+  details summary { cursor: pointer; color: #9aa4c4; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>Tsumu 歌词打点器</h1>
+<div class="sub">给没有时间轴的歌词做 LRC：载入音频 → 一行一句 → 边听边按空格打点 → 导出。</div>
+
+<div class="panel">
+  <div class="row">
+    <div class="grow">
+      <label class="fld">标题（决定导出文件名，也用来区分多首歌的打点存档）</label>
+      <input type="text" id="title" placeholder="例如：Last Promise">
+    </div>
+    <div class="grow">
+      <label class="fld">音频（拖进来 / 点右侧选，不限定文件名）</label>
+      <div class="row">
+        <button id="pickBtn">选择音频…</button>
+        <input id="pick" type="file" accept="audio/*" style="display:none">
+        <span class="pill" id="audioName">未载入</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px; align-items:flex-start">
+    <div class="grow">
+      <label class="fld">原文（一行一句；外语原词）</label>
+      <textarea id="taMain" spellcheck="false" placeholder="꽃잎이 떨어지는날&#10;마지막순간을 마주한우리&#10;…"></textarea>
+    </div>
+    <div class="grow">
+      <label class="fld">译文（可选，行数要与原文一致；**界面显示的是这一栏**）</label>
+      <textarea id="taAlt" spellcheck="false" placeholder="在花瓣坠落的那一天&#10;迎来最后一刻的我们&#10;…"></textarea>
+    </div>
+  </div>
+  <div class="row" style="margin-top:6px">
+    <span class="pill" id="countInfo">—</span>
+    <span class="pill warn" id="countWarn"></span>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="row">
+    <audio id="au" controls preload="metadata"></audio>
+    <div class="clock" id="clock">0:00.00</div>
+    <span class="pill" id="prog">已打点 0 / 0</span>
+  </div>
+  <div class="row" style="margin-top:9px">
+    <button class="primary" id="tap">打点（空格）</button>
+    <button id="undo">撤销（Z）</button>
+    <button id="redo">重做（Y）</button>
+    <button id="play">播放/暂停（Enter）</button>
+    <button id="back">← 2 秒</button>
+    <button id="fwd">2 秒 →</button>
+    <button class="ghost" id="clearTimes">只清时间</button>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="row">
+    <button id="importLrc">导入现有 LRC（贴到下面会解析）</button>
+    <button id="equiBtn">等距粗排（首句用当前时间 / 末句用下次打点）</button>
+    <span class="pill" id="toolMsg"></span>
+  </div>
+  <details style="margin-top:8px">
+    <summary>粘贴现成 LRC 到这里（点上面的"导入现有 LRC"解析）</summary>
+    <textarea id="taImport" spellcheck="false" style="height:90px; margin-top:6px"
+              placeholder="[00:19.048]在花瓣坠落的那一天&#10;[00:22.094]迎来最后一刻的我们"></textarea>
+  </details>
+</div>
+
+<div class="panel" style="padding-top:6px">
+  <table id="tbl">
+    <thead><tr><th>#</th><th>时间</th><th>歌词（显示译文）</th><th>操作</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <div class="row">
+    <label class="fld" style="margin:0">导出：</label>
+    <button class="primary" id="expSingle">单语 LRC</button>
+    <button class="primary" id="expDual">双语 LRC（原文段 + 译文段）</button>
+    <button id="saveJson">保存打点 .json</button>
+    <button id="loadJsonBtn">读取打点 .json</button>
+    <input id="loadJson" type="file" accept=".json,application/json" style="display:none">
+    <span class="pill" id="expMsg"></span>
+  </div>
+  <textarea id="out" spellcheck="false" style="margin-top:9px" placeholder="导出内容会出现在这里，同时自动下载。"></textarea>
+  <div class="hint" style="margin-top:8px">
+    <b>为什么"双语"是两段同时间戳</b>：播放器取「最后一条 t ≤ 当前时间」的行 ⇒ 后出现的那段赢 ⇒ <b>界面只显示后段</b>。
+    所以把<b>原文放第一段、译文放第二段</b>，就得到"只显示译文"。<br>
+    快捷键：<kbd>空格</kbd> 打点并跳下一句 · <kbd>Enter</kbd> 播放/暂停 · <kbd>Z</kbd> 撤销 · <kbd>Y</kbd> 重做 ·
+    <kbd>←</kbd><kbd>→</kbd> 前后 2 秒 · 点表头行号可切当前句。<br>
+    <span class="warn">打点按标题分别存在本机浏览器里</span>；换电脑/清缓存前请用「保存打点 .json」留一份。
+  </div>
+</div>
+
+<script>(function() {
+  "use strict";
+  var KEYPFX = "tsumu-lyric-tapper:";
+  var S = {
+    title: "",
+    main: [],
+
+    alt: [],
+
+    times: [],
+
+    audioName: "",
+    cur: 0,
+    undo: [],
+    redo: []
+  };
+  var au = document.getElementById("au");
+  var clock = document.getElementById("clock");
+  var prog = document.getElementById("prog");
+  var tbody = document.querySelector("#tbl tbody");
+  var elTitle = document.getElementById("title");
+  var elMain = document.getElementById("taMain");
+  var elAlt = document.getElementById("taAlt");
+  var elCount = document.getElementById("countInfo");
+  var elCountWarn = document.getElementById("countWarn");
+  var elAudioName = document.getElementById("audioName");
+  var elOut = document.getElementById("out");
+  var elToolMsg = document.getElementById("toolMsg");
+  var elExpMsg = document.getElementById("expMsg");
+  function fmt(t) {
+    if (t == null || !isFinite(t)) return "";
+    var m = Math.floor(t / 60), s = t - m * 60;
+    return String(m).padStart(2, "0") + ":" + s.toFixed(3).padStart(6, "0");
+  }
+  function parseFmt(str) {
+    var m = /^\s*(\d{1,3}):(\d{1,2}(?:\.\d{1,3})?)\s*$/.exec(String(str || ""));
+    if (!m) return null;
+    return Number(m[1]) * 60 + Number(m[2]);
+  }
+  function splitLines(txt) {
+    return String(txt || "").split(/\r?\n/).map(function(l) {
+      return l.replace(/\s+$/, "");
+    }).filter(function(l) {
+      return l.trim() !== "";
+    });
+  }
+  function keyOf() {
+    return KEYPFX + (S.title || "(untitled)");
+  }
+  function resyncFromInputs() {
+    var m = splitLines(elMain.value), a = splitLines(elAlt.value);
+    var oldTimes = S.times, oldLen = S.main.length;
+    S.main = m;
+    S.alt = a;
+    S.times = m.map(function(_, i) {
+      return oldTimes[i] !== void 0 && typeof oldTimes[i] === "number" ? oldTimes[i] : null;
+    });
+    if (m.length !== oldLen) S.cur = Math.min(S.cur, Math.max(0, m.length - 1));
+    elCount.textContent = "原文 " + m.length + " 行" + (a.length ? " · 译文 " + a.length + " 行" : " · 无译文");
+    elCountWarn.textContent = a.length && a.length !== m.length ? "★ 原文与译文行数不一致（导出会按原文行数，缺译文的行用原文顶上）" : "";
+    render();
+    saveLocal();
+  }
+  function saveLocal() {
+    try {
+      localStorage.setItem(keyOf(), JSON.stringify({
+        title: S.title,
+        main: S.main,
+        alt: S.alt,
+        times: S.times,
+        cur: S.cur,
+        audioName: S.audioName
+      }));
+    } catch (e) {
+    }
+  }
+  function loadLocal() {
+    try {
+      var j = JSON.parse(localStorage.getItem(keyOf()) || "null");
+      if (!j) return false;
+      S.main = j.main || [];
+      S.alt = j.alt || [];
+      S.times = (j.times || []).map(function(v) {
+        return typeof v === "number" ? v : null;
+      });
+      S.cur = Math.min(j.cur || 0, Math.max(0, S.main.length - 1));
+      S.audioName = j.audioName || "";
+      elMain.value = S.main.join("\n");
+      elAlt.value = S.alt.join("\n");
+      elAudioName.textContent = S.audioName ? "上次：" + S.audioName : "未载入";
+      elCount.textContent = "原文 " + S.main.length + " 行" + (S.alt.length ? " · 译文 " + S.alt.length + " 行" : " · 无译文");
+      render();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function render() {
+    tbody.innerHTML = "";
+    for (var i = 0; i < S.main.length; i++) {
+      (function(i2) {
+        var tr = document.createElement("tr");
+        tr.dataset.i = String(i2);
+        if (i2 === S.cur) tr.className = "now";
+        var td0 = document.createElement("td");
+        td0.className = "idx";
+        td0.textContent = String(i2 + 1);
+        var td1 = document.createElement("td");
+        td1.className = "time";
+        var inp = document.createElement("input");
+        inp.value = fmt(S.times[i2]);
+        inp.placeholder = "mm:ss.mmm";
+        inp.addEventListener("change", function(ev) {
+          var v = parseFmt(ev.target.value);
+          setTime(i2, v, true);
+        });
+        inp.addEventListener("click", function(ev) {
+          ev.stopPropagation();
+        });
+        td1.appendChild(inp);
+        var td2 = document.createElement("td");
+        var a = document.createElement("div");
+        a.textContent = S.alt[i2] || S.main[i2];
+        td2.appendChild(a);
+        if (S.alt[i2] && S.main[i2]) {
+          var b = document.createElement("div");
+          b.className = "ko";
+          b.textContent = S.main[i2];
+          td2.appendChild(b);
+        }
+        var td3 = document.createElement("td");
+        td3.className = "act";
+        var bSet = document.createElement("button");
+        bSet.textContent = "记到此处";
+        bSet.style.marginRight = "5px";
+        bSet.addEventListener("click", function(ev) {
+          ev.stopPropagation();
+          setTime(i2, au.currentTime);
+        });
+        var bJump = document.createElement("button");
+        bJump.textContent = "试听";
+        bJump.addEventListener("click", function(ev) {
+          ev.stopPropagation();
+          if (S.times[i2] == null) {
+            elToolMsg.textContent = "这一句还没打点";
+            return;
+          }
+          au.currentTime = S.times[i2];
+          au.play();
+        });
+        td3.appendChild(bSet);
+        td3.appendChild(bJump);
+        tr.appendChild(td0);
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tr.appendChild(td3);
+        tr.addEventListener("click", function() {
+          S.cur = i2;
+          render();
+        });
+        tbody.appendChild(tr);
+      })(i);
+    }
+    var done = S.times.filter(function(v) {
+      return typeof v === "number";
+    }).length;
+    prog.textContent = "已打点 " + done + " / " + S.main.length;
+  }
+  function setTime(i, t, noAdvance) {
+    if (i < 0 || i >= S.main.length) return;
+    S.undo.push({ i, prev: S.times[i], prevCur: S.cur });
+    S.redo.length = 0;
+    S.times[i] = t == null || !isFinite(t) ? null : Math.max(0, Math.round(t * 1e3) / 1e3);
+    if (!noAdvance) S.cur = Math.min(S.main.length - 1, i + 1);
+    saveLocal();
+    render();
+  }
+  document.addEventListener("keydown", function(ev) {
+    var tag = ev.target && ev.target.tagName || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (ev.code === "Space") {
+      ev.preventDefault();
+      setTime(S.cur, au.currentTime);
+    } else if (ev.key === "Enter") {
+      ev.preventDefault();
+      if (au.paused) au.play();
+      else au.pause();
+    } else if (ev.key === "z" || ev.key === "Z") {
+      ev.preventDefault();
+      doUndo();
+    } else if (ev.key === "y" || ev.key === "Y") {
+      ev.preventDefault();
+      doRedo();
+    } else if (ev.key === "ArrowLeft") {
+      ev.preventDefault();
+      au.currentTime = Math.max(0, au.currentTime - 2);
+    } else if (ev.key === "ArrowRight") {
+      ev.preventDefault();
+      au.currentTime = Math.min(au.duration || 0, au.currentTime + 2);
+    }
+  });
+  function doUndo() {
+    var h = S.undo.pop();
+    if (!h) {
+      elToolMsg.textContent = "没有可撤销的";
+      return;
+    }
+    S.redo.push({ i: h.i, prev: S.times[h.i], prevCur: S.cur });
+    S.times[h.i] = h.prev;
+    S.cur = h.prevCur;
+    saveLocal();
+    render();
+  }
+  function doRedo() {
+    var h = S.redo.pop();
+    if (!h) {
+      elToolMsg.textContent = "没有可重做的";
+      return;
+    }
+    S.undo.push({ i: h.i, prev: S.times[h.i], prevCur: S.cur });
+    S.times[h.i] = h.prev;
+    S.cur = h.prevCur;
+    saveLocal();
+    render();
+  }
+  au.addEventListener("timeupdate", function() {
+    var t = au.currentTime, m = Math.floor(t / 60), s = t - m * 60;
+    clock.textContent = m + ":" + s.toFixed(2).padStart(5, "0");
+  });
+  function loadAudioFile(f) {
+    if (!f) return;
+    au.src = URL.createObjectURL(f);
+    S.audioName = f.name;
+    elAudioName.textContent = f.name;
+    if (!S.title) {
+      elTitle.value = f.name.replace(/\.[^.]+$/, "");
+      S.title = elTitle.value;
+    }
+    saveLocal();
+  }
+  var dropZone = document.body;
+  dropZone.addEventListener("dragover", function(ev) {
+    ev.preventDefault();
+  });
+  dropZone.addEventListener("drop", function(ev) {
+    ev.preventDefault();
+    var f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
+    if (f) loadAudioFile(f);
+  });
+  function importLrc() {
+    var txt = document.getElementById("taImport").value;
+    var rows = String(txt || "").split(/\r?\n/);
+    var texts = [], times = [];
+    var RE = /\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g;
+    rows.forEach(function(line) {
+      RE.lastIndex = 0;
+      var lastT = null, m;
+      while (m = RE.exec(line)) {
+        var frac = m[3] ? Number(m[3]) / (String(m[3]).length === 1 ? 10 : String(m[3]).length === 2 ? 100 : 1e3) : 0;
+        lastT = Number(m[1]) * 60 + Number(m[2]) + frac;
+      }
+      var body2 = line.replace(RE, "").trim();
+      if (lastT == null || !body2) return;
+      times.push(lastT);
+      texts.push(body2);
+    });
+    if (!texts.length) {
+      elToolMsg.textContent = "没解析到带时间戳的行（要像 [00:19.048]歌词 这样）";
+      return;
+    }
+    elMain.value = texts.join("\n");
+    S.main = texts;
+    S.alt = splitLines(elAlt.value);
+    S.times = times;
+    S.cur = 0;
+    elCount.textContent = "原文 " + texts.length + " 行" + (S.alt.length ? " · 译文 " + S.alt.length + " 行" : " · 无译文");
+    saveLocal();
+    render();
+    elToolMsg.textContent = "已导入 " + texts.length + " 句（可以在上面逐句微调）";
+  }
+  var equiFirst = null;
+  function equi() {
+    var n = S.main.length;
+    if (n < 2) {
+      elToolMsg.textContent = "至少要有 2 句";
+      return;
+    }
+    if (equiFirst == null) {
+      equiFirst = Math.round(au.currentTime * 1e3) / 1e3;
+      elToolMsg.textContent = "首句 = " + fmt(equiFirst) + "（导到第一句时再点一次这个按钮，用那时的位置当末句）";
+      return;
+    }
+    var last = Math.round(au.currentTime * 1e3) / 1e3;
+    if (last <= equiFirst) {
+      elToolMsg.textContent = "末句要比首句晚（当前 " + fmt(last) + "）";
+      return;
+    }
+    S.undo.push({ bulk: true, times: S.times.slice(), cur: S.cur });
+    for (var i = 0; i < n; i++) S.times[i] = Math.round((equiFirst + (last - equiFirst) * i / (n - 1)) * 1e3) / 1e3;
+    equiFirst = null;
+    saveLocal();
+    render();
+    elToolMsg.textContent = "已按 " + fmt(S.times[0]) + " → " + fmt(S.times[n - 1]) + " 等距铺开 " + n + " 句（再逐句校正）";
+  }
+  function body(which) {
+    var L = [];
+    for (var i = 0; i < S.main.length; i++) {
+      if (S.times[i] == null) continue;
+      var text = which === "dst" ? S.alt[i] || S.main[i] : S.main[i];
+      L.push({ t: S.times[i], s: "[" + fmt(S.times[i]) + "]" + text });
+    }
+    L.sort(function(a, b) {
+      return a.t - b.t;
+    });
+    return L.map(function(x) {
+      return x.s;
+    });
+  }
+  function download(name, text) {
+    try {
+      var blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function() {
+        URL.revokeObjectURL(url);
+      }, 4e3);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function missingList() {
+    var miss = [];
+    for (var i = 0; i < S.main.length; i++) if (S.times[i] == null) miss.push(i + 1);
+    return miss;
+  }
+  function exportSingle() {
+    var txt = body("dst").join("\n") + "\n";
+    elOut.value = txt;
+    var nam = (S.title || "lyrics") + ".lrc";
+    var okDl = download(nam, txt);
+    var miss = missingList();
+    elExpMsg.textContent = (okDl ? "已导出 " + nam : "下载被拦，请手动复制") + (miss.length ? "（漏 " + miss.length + " 句：" + miss.join("、") + "）" : "");
+  }
+  function exportDual() {
+    var a = body("src"), b = body("dst");
+    var txt = a.join("\n") + "\n\n" + b.join("\n") + "\n";
+    elOut.value = txt;
+    var nam = (S.title || "lyrics") + ".lrc";
+    var okDl = download(nam, txt);
+    var miss = missingList();
+    elExpMsg.textContent = (okDl ? "已导出双语 " + nam + "（第一段原文、第二段译文 ⇒ 界面只显示译文）" : "下载被拦，请手动复制") + (miss.length ? "（漏 " + miss.length + " 句）" : "");
+  }
+  elTitle.addEventListener("input", function() {
+    S.title = elTitle.value.trim();
+    saveLocal();
+  });
+  elMain.addEventListener("input", resyncFromInputs);
+  elAlt.addEventListener("input", resyncFromInputs);
+  document.getElementById("pickBtn").addEventListener("click", function() {
+    document.getElementById("pick").click();
+  });
+  document.getElementById("pick").addEventListener("change", function(ev) {
+    loadAudioFile(ev.target.files && ev.target.files[0]);
+  });
+  document.getElementById("tap").addEventListener("click", function() {
+    setTime(S.cur, au.currentTime);
+  });
+  document.getElementById("undo").addEventListener("click", doUndo);
+  document.getElementById("redo").addEventListener("click", doRedo);
+  document.getElementById("play").addEventListener("click", function() {
+    if (au.paused) au.play();
+    else au.pause();
+  });
+  document.getElementById("back").addEventListener("click", function() {
+    au.currentTime = Math.max(0, au.currentTime - 2);
+  });
+  document.getElementById("fwd").addEventListener("click", function() {
+    au.currentTime = Math.min(au.duration || 0, au.currentTime + 2);
+  });
+  document.getElementById("clearTimes").addEventListener("click", function() {
+    if (!confirm("只清时间、保留歌词？")) return;
+    S.undo.push({ bulk: true, times: S.times.slice(), cur: S.cur });
+    S.times = S.main.map(function() {
+      return null;
+    });
+    S.cur = 0;
+    saveLocal();
+    render();
+    elToolMsg.textContent = "时间已清空（可以按 Z 撤销）";
+  });
+  document.getElementById("importLrc").addEventListener("click", importLrc);
+  document.getElementById("equiBtn").addEventListener("click", equi);
+  document.getElementById("expSingle").addEventListener("click", exportSingle);
+  document.getElementById("expDual").addEventListener("click", exportDual);
+  document.getElementById("saveJson").addEventListener("click", function() {
+    var data = { title: S.title, main: S.main, alt: S.alt, times: S.times };
+    var ok = download((S.title || "taps") + ".taps.json", JSON.stringify(data, null, 2));
+    elExpMsg.textContent = ok ? "已保存打点 json" : "下载被拦";
+  });
+  document.getElementById("loadJsonBtn").addEventListener("click", function() {
+    document.getElementById("loadJson").click();
+  });
+  document.getElementById("loadJson").addEventListener("change", function(ev) {
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function() {
+      try {
+        var j = JSON.parse(String(r.result));
+        if (!j || !j.main) throw new Error("格式不对");
+        S.title = j.title || S.title;
+        elTitle.value = S.title;
+        S.main = j.main;
+        S.alt = j.alt || [];
+        S.times = (j.times || []).map(function(v) {
+          return typeof v === "number" ? v : null;
+        });
+        elMain.value = S.main.join("\n");
+        elAlt.value = S.alt.join("\n");
+        S.cur = 0;
+        saveLocal();
+        render();
+        elExpMsg.textContent = "已读取打点 json（" + S.main.length + " 句）";
+      } catch (e) {
+        elExpMsg.textContent = "读取失败：" + e.message;
+      }
+    };
+    r.readAsText(f, "utf-8");
+  });
+  (function boot() {
+    S.title = elTitle.value.trim();
+    if (!loadLocal()) {
+      elCount.textContent = "行数：0 · 无第二语";
+      render();
+    }
+  })();
+})();
+</script>
+</body>
+</html>

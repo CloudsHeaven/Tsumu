@@ -1,0 +1,23 @@
+# 默认：不做行尾转换（与仓库创建时的 core.autocrlf=false 配合，双保险）
+* -text
+
+# 文本文件：-text = 是文本，但禁止行尾转换
+*.js    -text
+*.json  -text
+*.md    -text
+*.html  -text
+*.css   -text
+*.txt   -text
+*.ps1   -text
+
+# 二进制：禁止任何文本处理
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.ico   binary
+*.moc3  binary
+*.exe   binary
+*.zip   binary
+
+# 统计口径：第三方 SDK 不计入本项目语言统计
+web/vendor/** linguist-vendored
